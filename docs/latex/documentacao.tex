@@ -1,0 +1,452 @@
+% Documentação técnica - Seguro Viagem (Gestão de Apólices) - versão .NET
+% Compilar dentro de docs/latex:  pdflatex documentacao.tex  (duas vezes, para o sumário)
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\setlength{\emergencystretch}{3em}
+
+\newcommand{\arq}[1]{\texttt{\detokenize{#1}}}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape,
+  numbers=left, numberstyle=\scriptsize, numbersep=6pt,
+  frame=lines, xleftmargin=16pt,
+  breaklines=true, columns=fullflexible, keepspaces=true,
+  showstringspaces=false, tabsize=4,
+  inputencoding=utf8, extendedchars=true,
+  literate=
+    {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {â}{{\^a}}1 {ê}{{\^e}}1 {ô}{{\^o}}1
+    {ã}{{\~a}}1 {õ}{{\~o}}1 {ç}{{\c{c}}}1 {—}{{---}}1,
+}
+\lstdefinestyle{cs}{language=[Sharp]C, morekeywords={var,async,await,get,set,init,yield,nameof,required}}
+\lstdefinestyle{txt}{numbers=none}
+\renewcommand{\lstlistingname}{Código}
+
+\newcommand{\codigo}[2]{\lstinputlisting[style=cs,caption={\arq{#1}}]{../../#2}}
+
+\title{Seguro Viagem -- Gestão de Apólices\\[0.3em]
+  \large Documentação técnica do código (versão .NET)}
+\author{Carlos Guilherme Fontes Pereira\\ \small Teste técnico -- CORIS}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Este documento descreve o funcionamento de uma aplicação web para gestão de apólices de seguro
+viagem, construída com ASP.NET Core 8 (C\#), Entity Framework Core, React 18 e MySQL 8, com
+implantação prevista na Microsoft Azure. São apresentados o modelo de dados, as regras de negócio,
+a organização do código em camadas, a API e os testes automatizados, com o objetivo de permitir que
+o leitor entenda o sistema e consiga modificá-lo.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% =====================================================================
+\section{Introdução}
+
+A aplicação permite a um operador de seguradora \textbf{cadastrar, consultar, editar e excluir}
+apólices de seguro viagem. Ao preencher o formulário, o operador informa os dados do segurado,
+o destino, o plano e o período da viagem; o sistema então calcula o \emph{prêmio}, isto é, o
+valor a ser pago pelo seguro.
+
+O projeto está dividido em duas partes independentes que conversam por HTTP/JSON:
+
+\begin{itemize}
+  \item \textbf{backend} (\arq{backend/}): Web API em ASP.NET Core, responsável pelas regras e pelo banco;
+  \item \textbf{frontend} (\arq{frontend/}): interface em React, que apenas exibe dados e envia formulários.
+\end{itemize}
+
+\subsection{Tecnologias}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+Camada & Tecnologia \\
+\midrule
+Backend & C\#, ASP.NET Core 8 Web API, Swagger \\
+Acesso a dados & Entity Framework Core 8 (provider Pomelo para MySQL) \\
+Frontend & React 18, Vite, React Router \\
+Banco de dados & MySQL 8 \\
+Testes & xUnit, EF Core InMemory \\
+Ambiente & Docker Compose \\
+Nuvem & Microsoft Azure \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% =====================================================================
+\section{Modelo de dados}
+
+O banco possui duas tabelas com relacionamento \textbf{1:N}: um segurado pode ter várias
+apólices, e cada apólice pertence a um único segurado.
+
+\begin{center}
+\begin{tikzpicture}[tab/.style={draw, align=left, font=\ttfamily\small, inner sep=5pt}]
+  \node[tab] (s) {\textbf{segurados}\\[2pt]
+    Id (PK)\\ Nome\\ Cpf (único)\\ Email\\ DataNascimento};
+  \node[tab, right=3cm of s] (a) {\textbf{apolices}\\[2pt]
+    Id (PK)\\ Numero (único)\\ SeguradoId (FK)\\ Destino, Plano\\
+    InicioVigencia, FimVigencia\\ ValorPremioCentavos\\ Status\\ CriadoEm, AtualizadoEm\\ ExcluidoEm};
+  \draw (s.east) -- node[above, font=\small]{1 \hspace{2cm} N} (s.east -| a.west);
+\end{tikzpicture}
+\end{center}
+
+As tabelas são geradas pelo Entity Framework a partir das classes \arq{Segurado} e \arq{Apolice}
+(abordagem \emph{code first}). A migration foi criada com
+\texttt{dotnet ef migrations add CriarTabelas} e é aplicada automaticamente quando a API inicia
+(\texttt{db.Database.Migrate()} no \arq{Program.cs}).
+
+Três decisões merecem destaque:
+
+\begin{enumerate}
+  \item \textbf{Valores em centavos.} O prêmio é guardado como \texttt{int} em centavos
+        (\texttt{32370} = R\$~323,70). Tipos de ponto flutuante como \texttt{double} não representam
+        decimais com exatidão ($0{,}1 + 0{,}2 = 0{,}30000000000000004$), o que é inaceitável para
+        valores financeiros.
+  \item \textbf{Segurado separado da apólice.} O CPF é único, então uma mesma pessoa que contrata
+        outro seguro é reaproveitada, sem duplicar dados.
+  \item \textbf{Exclusão lógica.} Excluir uma apólice apenas preenche \texttt{ExcluidoEm}.
+        Um \emph{filtro global} no \arq{AppDbContext} (\texttt{HasQueryFilter}) esconde essas
+        apólices de todas as consultas, mas o registro continua no banco para auditoria.
+\end{enumerate}
+
+\codigo{CorisSeguros.Api/Data/AppDbContext.cs}{backend/CorisSeguros.Api/Data/AppDbContext.cs}
+
+% =====================================================================
+\section{Regras de negócio}
+
+\subsection{Cálculo do prêmio}
+
+\begin{equation*}
+  \text{prêmio} = \text{diária do plano} \times \text{dias}
+  \times \text{fator do destino} \times \text{fator da idade}
+\end{equation*}
+
+\begin{center}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Plano & Diária \\
+\midrule
+Essencial & R\$ 12,90 \\
+Plus & R\$ 24,90 \\
+Premium & R\$ 39,90 \\
+\bottomrule
+\end{tabular}
+\quad
+\begin{tabular}{@{}lr@{}}
+\toprule
+Destino & Fator \\
+\midrule
+Nacional & 50\% \\
+América do Sul & 100\% \\
+Europa & 130\% \\
+América do Norte & 140\% \\
+Ásia, África, Oceania & 150\% \\
+\bottomrule
+\end{tabular}
+\quad
+\begin{tabular}{@{}lr@{}}
+\toprule
+Idade & Fator \\
+\midrule
+até 59 & 100\% \\
+60 a 74 & 160\% \\
+75 ou mais & 250\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Os dias incluem o primeiro e o último (de 01/10 a 10/10 são 10 dias), e a idade é calculada na
+data de início da viagem. Os valores das tabelas ficam na classe \arq{Models/Catalogo.cs}.
+
+\textbf{Exemplo.} Plano Plus, Europa, 10 dias, segurado de 31 anos:
+\[
+  2490 \times 10 = 24900 \;\rightarrow\; 24900 \times 1{,}30 = 32370 \;\rightarrow\; 32370 \times 1{,}00 = 32370
+  \text{ centavos} = \text{R\$ 323,70}.
+\]
+
+\subsection{Validações e demais regras}
+
+\begin{itemize}
+  \item Todos os campos são obrigatórios e o CPF deve ter dígitos verificadores válidos.
+  \item O fim da vigência não pode ser anterior ao início, e a viagem tem no máximo 365 dias.
+  \item No cadastro, o início da vigência não pode ser anterior a hoje (na edição a apólice pode já estar em vigor).
+  \item Toda apólice recebe um número único no formato \texttt{CRS-2026-XXXXXXXX}.
+  \item Ao cadastrar um CPF que já existe, o segurado é atualizado e reaproveitado.
+\end{itemize}
+
+% =====================================================================
+\section{Arquitetura do backend}
+
+O backend é organizado em camadas, e cada classe tem uma única responsabilidade:
+
+\begin{center}
+\begin{tikzpicture}[
+  c/.style={draw, minimum width=2.4cm, minimum height=0.8cm, font=\small},
+  s/.style={-{Stealth}}, node distance=0.6cm]
+  \node[c] (f) {DTO (validação)};
+  \node[c, right=of f] (co) {Controller};
+  \node[c, right=of co] (se) {Service};
+  \node[c, right=of se] (ca) {Calculadora};
+  \node[c, below=0.7cm of se] (db) {AppDbContext};
+  \node[c, below=0.7cm of db] (bd) {MySQL};
+  \draw[s] (f) -- (co); \draw[s] (co) -- (se);
+  \draw[s] (se) -- (ca); \draw[s] (se) -- (db); \draw[s] (db) -- (bd);
+\end{tikzpicture}
+\end{center}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Pasta / arquivo & Responsabilidade \\
+\midrule
+\arq{Program.cs} & configura banco, injeção de dependência, Swagger, CORS e formato dos erros \\
+\arq{Controllers/} & recebem a requisição HTTP e devolvem a resposta \\
+\arq{Dtos/} & formato de entrada (com as validações) e de saída da API \\
+\arq{Services/} & regras de negócio (\arq{ApoliceService}) e cálculo do prêmio \\
+\arq{Models/} & entidades do banco e o catálogo de planos, destinos e status \\
+\arq{Data/} & \arq{AppDbContext}, migrations e dados de exemplo \\
+\arq{Validacoes/} & atributo \texttt{[Cpf]} \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Exemplo: o que acontece ao emitir uma apólice}
+
+\begin{enumerate}
+  \item O React envia \texttt{POST /api/apolices} com os dados do formulário em JSON.
+  \item O ASP.NET converte o JSON em um \arq{ApoliceRequest} e executa as validações
+        (atributos como \texttt{[Required]} e \texttt{[Cpf]}, e depois o método \texttt{Validate}).
+        Havendo erro, a API responde \texttt{400} com uma mensagem por campo e o controller nem é chamado,
+        por causa do atributo \texttt{[ApiController]}.
+  \item O \arq{ApolicesController} verifica a data de início e chama \texttt{ApoliceService.Criar}.
+  \item O service cria ou atualiza o segurado pelo CPF, calcula o prêmio, gera o número da apólice
+        e grava tudo com um único \texttt{SaveChangesAsync} (segurado e apólice são salvos juntos).
+  \item A apólice é convertida em \arq{ApoliceResponse} e a resposta é \texttt{201 Created}.
+\end{enumerate}
+
+\subsection{Program.cs e injeção de dependência}
+
+\codigo{CorisSeguros.Api/Program.cs}{backend/CorisSeguros.Api/Program.cs}
+
+A linha \texttt{AddScoped<ICalculadoraPremio, CalculadoraPremio>()} diz ao ASP.NET: quando uma classe
+pedir um \texttt{ICalculadoraPremio} no construtor, entregue um \texttt{CalculadoraPremio}.
+O \texttt{InvalidModelStateResponseFactory} padroniza os erros de validação no formato que o
+frontend espera: \texttt{\{ message, errors: \{ campo: ["mensagem"] \} \}}.
+
+\subsection{Validação}
+
+As validações ficam no próprio DTO. Os atributos validam cada campo; o método \texttt{Validate}
+(da interface \texttt{IValidatableObject}) valida as regras que envolvem mais de um campo e só é
+executado se os atributos passarem.
+
+\codigo{CorisSeguros.Api/Dtos/ApoliceRequest.cs}{backend/CorisSeguros.Api/Dtos/ApoliceRequest.cs}
+
+O CPF é validado pelo atributo \arq{Validacoes/CpfAttribute.cs}: cada dígito verificador é obtido
+multiplicando os dígitos anteriores por pesos decrescentes, somando e calculando
+$(10 \cdot \text{soma}) \bmod 11$ (o resultado 10 vale 0).
+
+\subsection{Controller}
+
+O controller não contém regra de negócio: repassa os dados ao service e escolhe o código HTTP
+da resposta (200, 201, 204 ou 404).
+
+\codigo{CorisSeguros.Api/Controllers/ApolicesController.cs}{backend/CorisSeguros.Api/Controllers/ApolicesController.cs}
+
+\subsection{Service}
+
+É a classe central do sistema. O construtor recebe o \arq{AppDbContext} e a \emph{interface}
+\texttt{ICalculadoraPremio}, e não uma classe concreta.
+
+\codigo{CorisSeguros.Api/Services/ApoliceService.cs}{backend/CorisSeguros.Api/Services/ApoliceService.cs}
+
+Pontos importantes:
+\begin{itemize}
+  \item \texttt{Include(a => a.Segurado)} carrega o segurado junto com a apólice (\emph{join}).
+  \item A busca por CPF compara só os números, então funciona com ou sem máscara.
+  \item A paginação usa \texttt{Skip} e \texttt{Take}, com 10 apólices por página.
+  \item \texttt{Excluir} não remove a linha: só preenche \texttt{ExcluidoEm}.
+\end{itemize}
+
+\subsection{Calculadora do prêmio}
+
+\codigo{CorisSeguros.Api/Services/ICalculadoraPremio.cs}{backend/CorisSeguros.Api/Services/ICalculadoraPremio.cs}
+\codigo{CorisSeguros.Api/Services/CalculadoraPremio.cs}{backend/CorisSeguros.Api/Services/CalculadoraPremio.cs}
+
+O arredondamento usa apenas inteiros: \texttt{(centavos * percentual + 50) / 100}. Em C\#, a divisão
+entre dois \texttt{int} descarta a parte decimal; somar 50 antes arredonda para o centavo mais próximo.
+
+% =====================================================================
+\section{SOLID e Clean Code}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Princípio & Aplicação \\
+\midrule
+S -- Responsabilidade única & validação (DTO), HTTP (Controller), regra de negócio (Service) e cálculo (Calculadora) em classes distintas \\
+O -- Aberto/fechado & nova regra de preço é uma nova classe que implementa \texttt{ICalculadoraPremio}; novo plano é um novo item no \texttt{Catalogo} \\
+L -- Substituição de Liskov & qualquer implementação da calculadora pode substituir a atual \\
+I -- Segregação de interfaces & a interface da calculadora possui um único método \\
+D -- Inversão de dependência & o service depende da interface; o \arq{Program.cs} escolhe a implementação \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Quanto a Clean Code: os nomes seguem o vocabulário do negócio (apólice, segurado, prêmio,
+vigência), os métodos são curtos e os valores fixos ficam em constantes
+(\texttt{VigenciaMaximaDias}, \texttt{PorPagina}) ou no \texttt{Catalogo}.
+
+% =====================================================================
+\section{API}
+
+A API pode ser testada pelo Swagger em \texttt{http://localhost:8000/swagger}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}llX@{}}
+\toprule
+Método & Rota & Descrição \\
+\midrule
+GET & \texttt{/api/apolices} & lista paginada (\texttt{busca}, \texttt{status}, \texttt{pagina}) \\
+GET & \texttt{/api/apolices/resumo} & totais da tela inicial \\
+GET & \texttt{/api/apolices/\{id\}} & detalhe \\
+POST & \texttt{/api/apolices} & cadastro (201) \\
+PUT & \texttt{/api/apolices/\{id\}} & edição, com recálculo do prêmio \\
+DELETE & \texttt{/api/apolices/\{id\}} & exclusão lógica (204) \\
+POST & \texttt{/api/apolices/cotacao} & calcula o prêmio sem salvar \\
+GET & \texttt{/api/opcoes} & planos, destinos e status \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Exemplo de requisição e resposta de erro:
+
+\begin{lstlisting}[style=txt]
+POST /api/apolices
+{ "seguradoNome": "Carlos Pereira", "seguradoCpf": "123.456.789-00",
+  "seguradoEmail": "carlos@email.com", "seguradoNascimento": "1995-05-10",
+  "destino": "europa", "plano": "plus",
+  "inicioVigencia": "2026-10-01", "fimVigencia": "2026-10-10" }
+
+400 Bad Request
+{ "message": "Verifique os campos informados.",
+  "errors": { "seguradoCpf": ["CPF inválido."] } }
+\end{lstlisting}
+
+O C\# usa nomes em \texttt{PascalCase} (\texttt{SeguradoNome}) e o JSON sai em \texttt{camelCase}
+(\texttt{seguradoNome}), que é o padrão do ASP.NET.
+
+% =====================================================================
+\section{Frontend}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Pasta & Conteúdo \\
+\midrule
+\arq{src/pages} & telas: lista, detalhe, cadastro e edição \\
+\arq{src/components} & formulário, paginação, diálogo de confirmação, notificações \\
+\arq{src/api} & \texttt{client.js} (função \texttt{request}) e \texttt{apolices.js} (uma função por endpoint) \\
+\arq{src/hooks} & \texttt{useApolice} e \texttt{useOpcoes} (busca de dados) \\
+\arq{src/utils/format.js} & formatação de moeda, datas e máscara de CPF \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Toda chamada à API passa por \texttt{request}, que define os cabeçalhos, converte o corpo para
+JSON e, em caso de erro, lança um \texttt{ApiError} com a mensagem de cada campo, exibida abaixo do
+campo correspondente no formulário. Campos vazios são enviados como \texttt{null}, para que a API
+responda ``Campo obrigatório.''.
+
+A \textbf{cotação em tempo real} funciona assim: quando todos os campos estão preenchidos, o
+formulário aguarda 400\,ms sem alterações (\emph{debounce}) e chama \texttt{/api/apolices/cotacao}.
+Se o usuário continuar digitando, a requisição anterior é cancelada com \texttt{AbortController}.
+
+% =====================================================================
+\section{Testes}
+
+São 26 testes automatizados (xUnit), executados com \texttt{dotnet test} na pasta \arq{backend}.
+
+\begin{itemize}
+  \item \arq{CalculadoraPremioTests}: combinações de plano, destino e idade (\texttt{[Theory]} com \texttt{[InlineData]}).
+  \item \arq{CpfTests}: CPFs válidos e inválidos.
+  \item \arq{ApoliceRequestTests}: campos obrigatórios, CPF e plano inválidos e limites da vigência.
+  \item \arq{ApoliceServiceTests}: cadastro, reaproveitamento do segurado, edição com recálculo,
+        exclusão lógica, busca e paginação, resumo e cotação.
+\end{itemize}
+
+Os testes do service usam o banco \emph{InMemory} do Entity Framework, então não precisam de MySQL:
+
+\begin{lstlisting}[style=cs,numbers=none]
+var options = new DbContextOptionsBuilder<AppDbContext>()
+    .UseInMemoryDatabase(Guid.NewGuid().ToString())
+    .Options;
+\end{lstlisting}
+
+% =====================================================================
+\section{Execução e implantação}
+
+\subsection{Com Docker}
+
+\begin{lstlisting}[style=txt]
+docker compose up -d --build
+\end{lstlisting}
+
+Aplicação em \texttt{http://localhost:3000} e Swagger em \texttt{http://localhost:8000/swagger}.
+Ao iniciar, a API aplica a migration e, se o banco estiver vazio, cadastra 5 apólices de exemplo.
+
+\subsection{Na Azure}
+
+\begin{center}
+\begin{tikzpicture}[
+  c/.style={draw, align=center, font=\small, minimum width=3.6cm, minimum height=0.9cm},
+  s/.style={-{Stealth}}, node distance=0.9cm]
+  \node[c] (u) {Usuário\\ (navegador)};
+  \node[c, right=1.4cm of u] (swa) {Static Web Apps\\ (React)};
+  \node[c, below=of swa] (app) {App Service\\ (API .NET)};
+  \node[c, below=of app] (db) {Database for MySQL};
+  \node[c, right=1.4cm of app] (kv) {Key Vault\\ (segredos)};
+  \draw[s] (u) -- (swa);
+  \draw[s] (u) |- (app);
+  \draw[s] (app) -- (db);
+  \draw[s] (app) -- (kv);
+\end{tikzpicture}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Static Web Apps} hospeda o React compilado.
+  \item \textbf{App Service} executa a API .NET 8.
+  \item \textbf{Azure Database for MySQL} armazena os dados.
+  \item \textbf{Key Vault} guarda a connection string do banco, lida pelo App Service via
+        \emph{Managed Identity}.
+\end{itemize}
+
+% =====================================================================
+\section{Trabalhos futuros}
+
+\begin{itemize}
+  \item Autenticação e perfis de acesso (JWT).
+  \item Endosso: histórico das alterações de cada apólice.
+  \item Testes de integração da API e testes no frontend.
+\end{itemize}
+
+\end{document}
