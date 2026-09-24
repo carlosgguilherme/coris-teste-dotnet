@@ -10,8 +10,3 @@ dist/
 .env
 .env.local
 
-# LaTeX
-docs/latex/*.aux
-docs/latex/*.log
-docs/latex/*.out
-docs/latex/*.toc
