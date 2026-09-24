@@ -48,6 +48,41 @@ public static class Catalogo
         new StatusApolice { Valor = "cancelada", Label = "Cancelada" },
     };
 
+    // Nomes que aparecem na dashboard
+    public static readonly Dictionary<string, string> EtapasDoFunil = new Dictionary<string, string>
+    {
+        ["iniciada"] = "Cotação iniciada",
+        ["calculada"] = "Preço calculado",
+        ["dados_preenchidos"] = "Dados preenchidos",
+        ["pagamento"] = "Pagamento",
+        ["convertida"] = "Apólice emitida",
+    };
+
+    public static readonly Dictionary<string, string> StatusSinistro = new Dictionary<string, string>
+    {
+        ["aberto"] = "Aberto",
+        ["em_analise"] = "Em análise",
+        ["aprovado"] = "Aprovado",
+        ["pago"] = "Pago",
+        ["negado"] = "Negado",
+    };
+
+    public static readonly Dictionary<string, string> Coberturas = new Dictionary<string, string>
+    {
+        ["despesas_medicas"] = "Despesas médicas",
+        ["odontologica"] = "Odontológica",
+        ["bagagem"] = "Extravio de bagagem",
+        ["cancelamento"] = "Cancelamento de viagem",
+        ["atraso_voo"] = "Atraso de voo",
+    };
+
+    public static readonly Dictionary<string, string> CanaisDeAtendimento = new Dictionary<string, string>
+    {
+        ["telefone"] = "Telefone",
+        ["whatsapp"] = "WhatsApp",
+        ["app"] = "App",
+    };
+
     public static Plano? BuscarPlano(string? valor)
     {
         return Planos.FirstOrDefault(p => p.Valor == valor);

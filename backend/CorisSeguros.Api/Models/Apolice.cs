@@ -8,6 +8,13 @@ public class Apolice
     public int SeguradoId { get; set; }
     public Segurado Segurado { get; set; } = null!;
 
+    // de onde veio a venda (usado na dashboard). Apólices cadastradas pela tela ficam sem canal.
+    public int? CanalId { get; set; }
+    public Canal? Canal { get; set; }
+
+    public int? CampanhaId { get; set; }
+    public Campanha? Campanha { get; set; }
+
     public string Destino { get; set; } = string.Empty;
     public string Plano { get; set; } = string.Empty;
     public DateOnly InicioVigencia { get; set; }

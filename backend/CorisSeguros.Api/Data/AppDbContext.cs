@@ -11,6 +11,12 @@ public class AppDbContext : DbContext
 
     public DbSet<Segurado> Segurados => Set<Segurado>();
     public DbSet<Apolice> Apolices => Set<Apolice>();
+    public DbSet<Canal> Canais => Set<Canal>();
+    public DbSet<Campanha> Campanhas => Set<Campanha>();
+    public DbSet<Cotacao> Cotacoes => Set<Cotacao>();
+    public DbSet<FunilEvento> FunilEventos => Set<FunilEvento>();
+    public DbSet<Sinistro> Sinistros => Set<Sinistro>();
+    public DbSet<Atendimento> Atendimentos => Set<Atendimento>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,6 +46,63 @@ public class AppDbContext : DbContext
 
             // exclusão lógica: as consultas ignoram as apólices excluídas
             entidade.HasQueryFilter(a => a.ExcluidoEm == null);
+            entidade.HasIndex(a => a.CriadoEm);
+        });
+
+        // ---------- tabelas da dashboard ----------
+
+        modelBuilder.Entity<Canal>(entidade =>
+        {
+            entidade.ToTable("canais");
+            entidade.Property(c => c.Codigo).HasMaxLength(20).IsRequired();
+            entidade.Property(c => c.Nome).HasMaxLength(60).IsRequired();
+            entidade.HasIndex(c => c.Codigo).IsUnique();
+        });
+
+        modelBuilder.Entity<Campanha>(entidade =>
+        {
+            entidade.ToTable("campanhas");
+            entidade.Property(c => c.Nome).HasMaxLength(80).IsRequired();
+            entidade.Property(c => c.UtmSource).HasMaxLength(30).IsRequired();
+        });
+
+        modelBuilder.Entity<Cotacao>(entidade =>
+        {
+            entidade.ToTable("cotacoes");
+            entidade.Property(c => c.Destino).HasMaxLength(30);
+            entidade.Property(c => c.Plano).HasMaxLength(20);
+            entidade.Property(c => c.Device).HasMaxLength(10);
+            entidade.Property(c => c.Status).HasMaxLength(20);
+            entidade.Property(c => c.EtapaAbandono).HasMaxLength(20);
+            entidade.HasIndex(c => new { c.CriadoEm, c.Status });
+        });
+
+        modelBuilder.Entity<FunilEvento>(entidade =>
+        {
+            entidade.ToTable("funil_eventos");
+            entidade.Property(e => e.Etapa).HasMaxLength(20);
+            entidade.HasIndex(e => new { e.CotacaoId, e.Etapa });
+        });
+
+        modelBuilder.Entity<Sinistro>(entidade =>
+        {
+            entidade.ToTable("sinistros");
+            entidade.Property(s => s.Numero).HasMaxLength(20);
+            entidade.Property(s => s.Cobertura).HasMaxLength(30);
+            entidade.Property(s => s.Status).HasMaxLength(20);
+            entidade.Property(s => s.MotivoNegativa).HasMaxLength(120);
+            entidade.HasIndex(s => s.Numero).IsUnique();
+            entidade.HasIndex(s => new { s.Status, s.DataAviso });
+            // sinistro de apólice excluída também não aparece
+            entidade.HasQueryFilter(s => s.Apolice.ExcluidoEm == null);
+        });
+
+        modelBuilder.Entity<Atendimento>(entidade =>
+        {
+            entidade.ToTable("atendimentos");
+            entidade.Property(a => a.Canal).HasMaxLength(20);
+            entidade.Property(a => a.Tipo).HasMaxLength(40);
+            entidade.HasIndex(a => a.Inicio);
         });
     }
 }

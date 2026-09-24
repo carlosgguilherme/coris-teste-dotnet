@@ -63,6 +63,22 @@ public class ApoliceServiceTests
     }
 
     [Fact]
+    public async Task Apolice_cancelada_so_pode_ser_reativada()
+    {
+        ApoliceResponse apolice = await _service.Criar(ApoliceRequestTests.Exemplo());
+        ApoliceRequest dados = ApoliceRequestTests.Exemplo();
+        dados.Status = "cancelada";
+        await _service.Atualizar(apolice.Id, dados);
+
+        dados.Plano = "premium";
+        await Assert.ThrowsAsync<RegraDeNegocioException>(() => _service.Atualizar(apolice.Id, dados));
+
+        dados.Status = "ativa";
+        ApoliceResponse? reativada = await _service.Atualizar(apolice.Id, dados);
+        Assert.Equal("ativa", reativada!.Status);
+    }
+
+    [Fact]
     public async Task Exclusao_e_logica()
     {
         ApoliceResponse apolice = await _service.Criar(ApoliceRequestTests.Exemplo());

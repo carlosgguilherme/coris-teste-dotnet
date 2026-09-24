@@ -65,7 +65,20 @@ public class ApolicesController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<ApoliceResponse>> Atualizar(int id, ApoliceRequest dados)
     {
-        ApoliceResponse? apolice = await _service.Atualizar(id, dados);
+        ApoliceResponse? apolice;
+        try
+        {
+            apolice = await _service.Atualizar(id, dados);
+        }
+        catch (RegraDeNegocioException erro)
+        {
+            return BadRequest(new
+            {
+                message = "Verifique os campos informados.",
+                errors = new Dictionary<string, string[]> { [erro.Campo] = new[] { erro.Message } },
+            });
+        }
+
         if (apolice == null)
         {
             return NaoEncontrada();

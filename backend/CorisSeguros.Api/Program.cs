@@ -1,6 +1,7 @@
 using System.Text.Json;
 using CorisSeguros.Api.Data;
 using CorisSeguros.Api.Services;
+using CorisSeguros.Api.Services.Dashboard;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Injeção de dependência: onde pedir ICalculadoraPremio, entrega a CalculadoraPremio
 builder.Services.AddScoped<ICalculadoraPremio, CalculadoraPremio>();
 builder.Services.AddScoped<ApoliceService>();
+builder.Services.AddScoped<DashboardService>();
 
 builder.Services.AddCors(options =>
 {
@@ -50,6 +52,9 @@ using (var scope = app.Services.CreateScope())
 
     var service = scope.ServiceProvider.GetRequiredService<ApoliceService>();
     await DadosIniciais.Popular(db, service);
+
+    var calculadora = scope.ServiceProvider.GetRequiredService<ICalculadoraPremio>();
+    new DadosDashboard(db, calculadora).Popular();
 }
 
 app.UseSwagger();

@@ -108,6 +108,12 @@ public class ApoliceService
             return null;
         }
 
+        // apólice cancelada só pode ser alterada para voltar a ficar ativa
+        if (apolice.Status == "cancelada" && (dados.Status ?? "cancelada") == "cancelada")
+        {
+            throw new RegraDeNegocioException("status", "Apólice cancelada não pode ser alterada. Reative-a primeiro.");
+        }
+
         apolice.Segurado = await SalvarSegurado(dados);
         PreencherDados(apolice, dados);
         if (dados.Status != null)
