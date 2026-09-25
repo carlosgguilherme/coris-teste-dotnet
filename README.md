@@ -6,7 +6,7 @@ Este repositório é um experimento pessoal. Como o .NET ainda é uma tecnologia
 
 ## Demonstração na Azure
 
-Está rodando junto com a versão Laravel, numa máquina virtual da Azure com Docker: http://172.172.89.245:8080
+Está rodando junto com a versão Laravel, numa máquina virtual da Azure com Docker: https://coris-seguros-carlos.eastus2.cloudapp.azure.com:8443
 
 ## O que tem
 
