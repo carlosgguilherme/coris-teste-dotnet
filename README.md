@@ -4,6 +4,10 @@ O projeto principal do teste técnico foi feito em **Laravel**: [carlosgguilherm
 
 Este repositório é um experimento pessoal. Como o .NET ainda é uma tecnologia que estou aprendendo, quis testar como seria converter o que fiz em Laravel para **ASP.NET Core (C#)**, de um jeito mais simples e dentro do prazo do teste. O frontend React é o mesmo do projeto principal.
 
+## Demonstração na Azure
+
+Está rodando junto com a versão Laravel, numa máquina virtual da Azure com Docker: http://172.172.89.245:8080
+
 ## O que tem
 
 - Cadastro, listagem, edição e exclusão (lógica) de apólices, com cálculo do prêmio
