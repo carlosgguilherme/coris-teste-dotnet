@@ -1,6 +1,6 @@
 namespace CorisSeguros.Api.Models;
 
-// Cada simulação de preço feita por um cliente. Status: "convertida" (virou apólice) ou "abandonada".
+// Cada vez que um cliente simula o preço. Status: "convertida" (virou apólice) ou "abandonada"
 public class Cotacao
 {
     public int Id { get; set; }

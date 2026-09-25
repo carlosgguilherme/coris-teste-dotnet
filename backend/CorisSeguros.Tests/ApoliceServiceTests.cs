@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CorisSeguros.Tests;
 
-// Testa o service usando um banco em memória (não precisa de MySQL)
+// Aqui uso um banco em memória do EF Core, assim o teste roda sem precisar subir o MySQL
 public class ApoliceServiceTests
 {
     private readonly AppDbContext _db;
@@ -89,7 +89,7 @@ public class ApoliceServiceTests
         Assert.Null(await _service.Buscar(apolice.Id));
         Assert.Equal(0, (await _service.Listar(null, null, 1)).Total);
 
-        // o registro continua no banco, só com a data de exclusão
+        // conferindo: a apólice não some do banco, só ganha a data de exclusão
         var noBanco = _db.Apolices.IgnoreQueryFilters().Single();
         Assert.NotNull(noBanco.ExcluidoEm);
     }

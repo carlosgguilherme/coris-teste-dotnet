@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore;
 namespace CorisSeguros.Api.Services.Dashboard;
 
 // Monta os números de cada aba da dashboard.
-// Busca os registros do período no banco e faz as contas com LINQ; as fórmulas ficam em Metricas.
+// Fiz do jeito mais simples: busco os registros do período e faço as contas com LINQ
+// (Where, GroupBy, Sum... parecido com as Collections do Laravel). As fórmulas estão em Metricas
 public class DashboardService
 {
     private const string SemCanal = "Painel interno";
@@ -20,7 +21,7 @@ public class DashboardService
 
     // ---------------------------------------------------------------- abas
 
-    // Visão geral (diretoria)
+    // Visão geral (pra diretoria)
     public object VisaoGeral(Periodo periodo)
     {
         Indicadores atual = CalcularIndicadores(periodo);
@@ -41,7 +42,7 @@ public class DashboardService
         };
     }
 
-    // Marketing: a campanha converte e o investimento volta?
+    // Marketing: a campanha converte? o dinheiro investido volta?
     public object Marketing(Periodo periodo)
     {
         List<Cotacao> cotacoes = CotacoesDoPeriodo(periodo);
@@ -86,7 +87,7 @@ public class DashboardService
         };
     }
 
-    // Comercial: quanto vendemos, por onde e o quê
+    // Comercial: quanto vendeu, por qual canal e qual plano
     public object Comercial(Periodo periodo)
     {
         List<Apolice> apolices = ApolicesEmitidas(periodo);
@@ -218,7 +219,7 @@ public class DashboardService
         };
     }
 
-    // prêmio dos últimos 12 meses, com o mesmo mês do ano anterior ao lado
+    // prêmio mês a mês dos últimos 12 meses, com o mesmo mês do ano passado do lado pra comparar
     private List<object> PremioMensal()
     {
         DateTime primeiroMes = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddMonths(-23);
@@ -244,7 +245,7 @@ public class DashboardService
         return meses;
     }
 
-    // quantas cotações chegaram a cada etapa
+    // funil: quantas cotações chegaram em cada etapa
     private List<object> Funil(Periodo periodo)
     {
         Dictionary<string, int> totais = _db.FunilEventos
@@ -258,7 +259,7 @@ public class DashboardService
             .ToList();
     }
 
-    // resultado de cada campanha que esteve no ar no período, do início ao fim da campanha
+    // resultado de cada campanha que ficou no ar no período (conta a campanha inteira)
     private class ResultadoCampanha
     {
         public int Id { get; set; }
@@ -315,7 +316,7 @@ public class DashboardService
         return resultados;
     }
 
-    // cotações e apólices de cada semana (começando no domingo) em que a campanha esteve no ar
+    // semana a semana da campanha (semana começando no domingo)
     private static List<object> SemanasDaCampanha(Campanha campanha, List<Cotacao> cotacoes)
     {
         DateOnly semana = InicioDaSemana(campanha.Inicio);
@@ -346,7 +347,7 @@ public class DashboardService
         return data.AddDays(-(int)data.DayOfWeek);
     }
 
-    // quantos dias antes da viagem o cliente comprou o seguro
+    // com quantos dias de antecedência o cliente comprou o seguro
     private List<object> AntecedenciaDaCompra(Periodo periodo)
     {
         List<int> dias = ApolicesEmitidas(periodo)
@@ -401,7 +402,7 @@ public class DashboardService
         return Metricas.Nps(notas.Count(n => n >= 9), notas.Count(n => n <= 6), notas.Count);
     }
 
-    // prêmio ganho no período por destino: cada apólice conta só os dias de viagem dentro do período
+    // prêmio ganho por destino (cada apólice conta só os dias que caem no período)
     private Dictionary<string, int> PremioGanhoPorDestino(Periodo periodo)
     {
         DateOnly inicio = DateOnly.FromDateTime(periodo.Inicio);
@@ -421,7 +422,7 @@ public class DashboardService
 
     // ---------------------------------------------------------------- consultas básicas
 
-    // apólices vendidas no período (sem as canceladas)
+    // apólices vendidas no período, tirando as canceladas
     private List<Apolice> ApolicesEmitidas(Periodo periodo)
     {
         return _db.Apolices

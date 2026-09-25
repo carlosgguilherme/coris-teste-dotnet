@@ -4,8 +4,9 @@ using CorisSeguros.Api.Validacoes;
 
 namespace CorisSeguros.Api.Data;
 
-// Gera 24 meses de histórico para a dashboard: canais, campanhas, apólices, cotações (com o funil),
-// sinistros e atendimentos. Usa semente fixa, então gera sempre os mesmos dados.
+// Gera 24 meses de dados de mentira pra dashboard ter o que mostrar: canais, campanhas, apólices,
+// cotações (com o funil), sinistros e atendimentos. O Random tem semente fixa (2026),
+// então sempre sai o mesmo resultado
 public class DadosDashboard
 {
     private const int Meses = 24;
@@ -98,7 +99,7 @@ public class DadosDashboard
 
     public void Popular()
     {
-        // só gera uma vez
+        // se já tiver dados, não gera de novo
         if (_db.Cotacoes.Any())
         {
             return;
@@ -128,7 +129,7 @@ public class DadosDashboard
             }
         }
 
-        _db.ChangeTracker.AutoDetectChangesEnabled = false; // deixa a gravação em massa mais rápida
+        _db.ChangeTracker.AutoDetectChangesEnabled = false; // sem isso a gravação de milhares de linhas fica bem lenta
         _db.Apolices.AddRange(apolices);
         _db.Cotacoes.AddRange(cotacoes);
         _db.Sinistros.AddRange(GerarSinistros(apolices));

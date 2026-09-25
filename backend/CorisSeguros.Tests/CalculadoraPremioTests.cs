@@ -25,7 +25,7 @@ public class CalculadoraPremioTests
     {
         var calculadora = new CalculadoraPremio();
 
-        // faz 60 anos um dia antes da viagem, então já paga 160%
+        // caso chato: faz 60 anos um dia antes de viajar, então já entra nos 160%
         int premio = calculadora.Calcular("plus", "europa", new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 10), new DateOnly(1966, 9, 30));
 
         Assert.Equal(51792, premio);

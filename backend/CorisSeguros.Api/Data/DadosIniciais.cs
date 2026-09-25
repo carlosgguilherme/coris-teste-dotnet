@@ -3,7 +3,7 @@ using CorisSeguros.Api.Services;
 
 namespace CorisSeguros.Api.Data;
 
-// Cadastra algumas apólices de exemplo quando o banco está vazio
+// Umas apólices de exemplo pra tela não começar vazia (só se o banco estiver vazio)
 public static class DadosIniciais
 {
     public static async Task Popular(AppDbContext db, ApoliceService service)

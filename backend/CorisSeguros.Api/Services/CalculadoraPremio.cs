@@ -35,7 +35,7 @@ public class CalculadoraPremio : ICalculadoraPremio
         return 100;
     }
 
-    // idade na data de início da viagem
+    // a idade que vale é a do dia que a viagem começa
     private static int CalcularIdade(DateOnly nascimento, DateOnly data)
     {
         int idade = data.Year - nascimento.Year;
@@ -47,7 +47,7 @@ public class CalculadoraPremio : ICalculadoraPremio
         return idade;
     }
 
-    // soma 50 antes de dividir para arredondar para o centavo mais próximo
+    // truque pra arredondar pro centavo mais próximo: soma 50 antes de dividir por 100
     private static int AplicarPercentual(int centavos, int percentual)
     {
         return (centavos * percentual + 50) / 100;

@@ -10,7 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
-        // Erros de validação no formato { message, errors: { campo: ["mensagem"] } }
+        // O .NET devolve os erros de validação num formato próprio. Mudei pra { message, errors }
+        // porque é o formato que o frontend (feito pro Laravel) já sabe ler
         options.InvalidModelStateResponseFactory = context =>
         {
             var erros = context.ModelState
@@ -26,13 +27,15 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Banco MySQL (a conexão fica no appsettings.json ou em variável de ambiente)
+// Conexão com o MySQL. A string de conexão vem do appsettings.json ou de variável de ambiente (no Docker)
 string conexao = builder.Configuration.GetConnectionString("Padrao")!;
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(conexao, new MySqlServerVersion(new Version(8, 0, 36)),
-        mysql => mysql.EnableRetryOnFailure())); // tenta de novo se o banco ainda estiver subindo
+        mysql => mysql.EnableRetryOnFailure())); // no Docker a API às vezes sobe antes do MySQL, isso faz ela tentar de novo
 
-// Injeção de dependência: onde pedir ICalculadoraPremio, entrega a CalculadoraPremio
+// Injeção de dependência (parecido com o bind do AppServiceProvider no Laravel):
+// quando alguma classe pedir ICalculadoraPremio, o .NET entrega uma CalculadoraPremio.
+// AddScoped = cria um objeto novo a cada requisição
 builder.Services.AddScoped<ICalculadoraPremio, CalculadoraPremio>();
 builder.Services.AddScoped<ApoliceService>();
 builder.Services.AddScoped<DashboardService>();
@@ -44,7 +47,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Cria/atualiza as tabelas e cadastra os dados de exemplo
+// Ao subir: roda as migrations (igual ao php artisan migrate) e cadastra os dados de exemplo
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

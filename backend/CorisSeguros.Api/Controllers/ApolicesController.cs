@@ -46,7 +46,7 @@ public class ApolicesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ApoliceResponse>> Criar(ApoliceRequest dados)
     {
-        // só no cadastro: na edição a apólice pode já estar em vigor
+        // só vale no cadastro. Na edição a viagem pode já ter começado, aí não dá pra exigir isso
         if (dados.InicioVigencia < DateOnly.FromDateTime(DateTime.Today))
         {
             return BadRequest(new
@@ -100,7 +100,7 @@ public class ApolicesController : ControllerBase
         return NoContent();
     }
 
-    // POST api/apolices/cotacao (calcula o prêmio sem salvar)
+    // POST api/apolices/cotacao -> só calcula o preço pra tela, não salva nada
     [HttpPost("cotacao")]
     public ActionResult<CotacaoResponse> Cotar(ApoliceRequest dados)
     {

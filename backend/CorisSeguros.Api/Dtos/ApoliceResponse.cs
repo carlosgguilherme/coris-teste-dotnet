@@ -2,7 +2,7 @@ using CorisSeguros.Api.Models;
 
 namespace CorisSeguros.Api.Dtos;
 
-// Formato da apólice que a API devolve para o frontend
+// O que a API devolve pro frontend (faz o papel do Resource do Laravel)
 public class ApoliceResponse
 {
     public int Id { get; set; }

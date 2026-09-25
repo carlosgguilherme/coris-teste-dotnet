@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CorisSeguros.Api.Controllers;
 
-// Listas usadas nos selects do formulário
+// Devolve as listas dos selects do formulário (planos, destinos...)
 [ApiController]
 [Route("api/opcoes")]
 public class OpcoesController : ControllerBase

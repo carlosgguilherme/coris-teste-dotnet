@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CorisSeguros.Api.Validacoes;
 
-// Uso: [Cpf] em cima da propriedade
+// Criei meu próprio atributo de validação. É só colocar [Cpf] em cima da propriedade
 public class CpfAttribute : ValidationAttribute
 {
     public CpfAttribute()
@@ -12,7 +12,7 @@ public class CpfAttribute : ValidationAttribute
 
     public override bool IsValid(object? value)
     {
-        // campo vazio é tratado pelo [Required]
+        // se estiver vazio deixo passar, quem reclama disso é o [Required]
         if (value == null)
         {
             return true;
@@ -35,13 +35,13 @@ public class CpfAttribute : ValidationAttribute
             return false;
         }
 
-        // 111.111.111-11, 222.222.222-22... passam na conta mas não são válidos
+        // pegadinha: 111.111.111-11, 222.222.222-22... passam na conta, mas não são CPFs válidos
         if (cpf.Distinct().Count() == 1)
         {
             return false;
         }
 
-        // calcula os dois dígitos verificadores (posições 9 e 10)
+        // conta dos dois dígitos verificadores (posições 9 e 10)
         for (int posicao = 9; posicao < 11; posicao++)
         {
             int soma = 0;

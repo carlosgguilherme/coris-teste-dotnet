@@ -1,6 +1,6 @@
 namespace CorisSeguros.Api.Models;
 
-// Ocorrência coberta pela apólice. Status: aberto, em_analise, aprovado, pago ou negado.
+// Sinistro = quando o cliente aciona o seguro. Status: aberto, em_analise, aprovado, pago ou negado
 public class Sinistro
 {
     public int Id { get; set; }
@@ -17,7 +17,8 @@ public class Sinistro
     public string Status { get; set; } = string.Empty;
     public string? MotivoNegativa { get; set; }
 
-    // quanto o sinistro custa: o valor pago, zero se foi negado, ou o reclamado enquanto está em aberto
+    // quanto esse sinistro custa pra seguradora: o que foi pago, zero se negou,
+    // e o valor pedido enquanto ainda não fechou
     public int Custo()
     {
         if (Status == "pago")

@@ -1,6 +1,6 @@
 namespace CorisSeguros.Api.Models;
 
-// Campanha de marketing (ex.: Black Friday 2025)
+// Campanha de marketing, tipo Black Friday 2025
 public class Campanha
 {
     public int Id { get; set; }

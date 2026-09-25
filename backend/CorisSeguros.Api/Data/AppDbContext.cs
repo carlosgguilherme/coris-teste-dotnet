@@ -39,12 +39,12 @@ public class AppDbContext : DbContext
             entidade.HasIndex(a => a.Numero).IsUnique();
             entidade.HasIndex(a => a.Status);
 
-            // um segurado tem várias apólices (1:N)
+            // relacionamento 1:N: um segurado pode ter várias apólices
             entidade.HasOne(a => a.Segurado)
                 .WithMany(s => s.Apolices)
                 .HasForeignKey(a => a.SeguradoId);
 
-            // exclusão lógica: as consultas ignoram as apólices excluídas
+            // filtro global: toda consulta já ignora as apólices excluídas, não preciso lembrar de filtrar
             entidade.HasQueryFilter(a => a.ExcluidoEm == null);
             entidade.HasIndex(a => a.CriadoEm);
         });
@@ -93,7 +93,7 @@ public class AppDbContext : DbContext
             entidade.Property(s => s.MotivoNegativa).HasMaxLength(120);
             entidade.HasIndex(s => s.Numero).IsUnique();
             entidade.HasIndex(s => new { s.Status, s.DataAviso });
-            // sinistro de apólice excluída também não aparece
+            // e os sinistros de apólice excluída também somem
             entidade.HasQueryFilter(s => s.Apolice.ExcluidoEm == null);
         });
 

@@ -1,6 +1,7 @@
 namespace CorisSeguros.Api.Services;
 
-// Erro de regra de negócio, com o campo que causou o problema (vira resposta 400 no controller)
+// Exceção pra quando uma regra de negócio não passa. Guarda o campo com problema,
+// e o controller transforma isso numa resposta 400
 public class RegraDeNegocioException : Exception
 {
     public string Campo { get; }

@@ -21,7 +21,7 @@ public class StatusApolice
     public string Label { get; set; } = string.Empty;
 }
 
-// Tabela fixa com os planos, destinos e status aceitos pelo sistema
+// Planos, destinos e status que o sistema aceita. No Laravel isso era enum, aqui deixei numa classe só
 public static class Catalogo
 {
     public static readonly List<Plano> Planos = new List<Plano>
@@ -48,7 +48,7 @@ public static class Catalogo
         new StatusApolice { Valor = "cancelada", Label = "Cancelada" },
     };
 
-    // Nomes que aparecem na dashboard
+    // nomes bonitos pra mostrar na dashboard
     public static readonly Dictionary<string, string> EtapasDoFunil = new Dictionary<string, string>
     {
         ["iniciada"] = "Cotação iniciada",

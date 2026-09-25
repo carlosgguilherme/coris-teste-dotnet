@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CorisSeguros.Api.Services;
 
-// Regras de negócio das apólices
+// Regras de negócio das apólices. O controller só recebe e responde, a lógica fica aqui
 public class ApoliceService
 {
     public const int PorPagina = 10;
@@ -95,7 +95,7 @@ public class ApoliceService
         PreencherDados(apolice, dados);
 
         _db.Apolices.Add(apolice);
-        await _db.SaveChangesAsync(); // salva o segurado e a apólice juntos
+        await _db.SaveChangesAsync(); // um SaveChanges só = segurado e apólice salvos juntos (se um falhar, nenhum salva)
 
         return ApoliceResponse.De(apolice);
     }
@@ -108,7 +108,7 @@ public class ApoliceService
             return null;
         }
 
-        // apólice cancelada só pode ser alterada para voltar a ficar ativa
+        // se está cancelada, a única mudança permitida é reativar
         if (apolice.Status == "cancelada" && (dados.Status ?? "cancelada") == "cancelada")
         {
             throw new RegraDeNegocioException("status", "Apólice cancelada não pode ser alterada. Reative-a primeiro.");
@@ -135,7 +135,7 @@ public class ApoliceService
             return false;
         }
 
-        // não apaga do banco, só marca como excluída
+        // não apaga de verdade, só marca a data de exclusão
         apolice.ExcluidoEm = DateTime.Now;
         await _db.SaveChangesAsync();
 
@@ -160,7 +160,7 @@ public class ApoliceService
         apolice.ValorPremioCentavos = CalcularPremio(dados);
     }
 
-    // se o CPF já existe, atualiza e reaproveita o segurado
+    // se o CPF já está cadastrado, atualizo os dados e reaproveito o mesmo segurado
     private async Task<Segurado> SalvarSegurado(ApoliceRequest dados)
     {
         string cpf = CpfAttribute.SomenteNumeros(dados.SeguradoCpf!);
@@ -189,7 +189,7 @@ public class ApoliceService
             dados.SeguradoNascimento!.Value);
     }
 
-    // exemplo: CRS-2026-3B5CE1F5
+    // fica tipo CRS-2026-3B5CE1F5
     private static string GerarNumero()
     {
         string codigo = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
