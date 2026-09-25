@@ -1,8 +1,8 @@
+// ApoliceResponse.cs
 using CorisSeguros.Api.Models;
 
 namespace CorisSeguros.Api.Dtos;
 
-// O que a API devolve pro frontend (faz o papel do Resource do Laravel)
 public class ApoliceResponse
 {
     public int Id { get; set; }

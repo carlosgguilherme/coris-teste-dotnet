@@ -1,3 +1,4 @@
+// CalculadoraPremioTests.cs
 using CorisSeguros.Api.Services;
 
 namespace CorisSeguros.Tests;
@@ -5,12 +6,12 @@ namespace CorisSeguros.Tests;
 public class CalculadoraPremioTests
 {
     [Theory]
-    [InlineData("plus", "europa", "1990-01-01", 32370)]            // 2490 x 10 x 130%
-    [InlineData("premium", "europa", "1990-01-01", 51870)]         // 3990 x 10 x 130%
-    [InlineData("essencial", "america_do_sul", "1990-01-01", 12900)] // 1290 x 10 x 100%
-    [InlineData("essencial", "nacional", "1990-01-01", 6450)]      // 1290 x 10 x 50%
-    [InlineData("plus", "europa", "1960-01-01", 51792)]            // 66 anos: x 160%
-    [InlineData("essencial", "america_do_sul", "1945-01-01", 32250)] // 81 anos: x 250%
+    [InlineData("plus", "europa", "1990-01-01", 32370)]
+    [InlineData("premium", "europa", "1990-01-01", 51870)]
+    [InlineData("essencial", "america_do_sul", "1990-01-01", 12900)]
+    [InlineData("essencial", "nacional", "1990-01-01", 6450)]
+    [InlineData("plus", "europa", "1960-01-01", 51792)]
+    [InlineData("essencial", "america_do_sul", "1945-01-01", 32250)]
     public void Calcula_premio_por_plano_destino_e_idade(string plano, string destino, string nascimento, int esperado)
     {
         var calculadora = new CalculadoraPremio();
@@ -25,7 +26,6 @@ public class CalculadoraPremioTests
     {
         var calculadora = new CalculadoraPremio();
 
-        // caso chato: faz 60 anos um dia antes de viajar, então já entra nos 160%
         int premio = calculadora.Calcular("plus", "europa", new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 10), new DateOnly(1966, 9, 30));
 
         Assert.Equal(51792, premio);

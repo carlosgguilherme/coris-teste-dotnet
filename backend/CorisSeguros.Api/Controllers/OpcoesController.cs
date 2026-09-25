@@ -1,9 +1,9 @@
+// OpcoesController.cs
 using CorisSeguros.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CorisSeguros.Api.Controllers;
 
-// Devolve as listas dos selects do formulário (planos, destinos...)
 [ApiController]
 [Route("api/opcoes")]
 public class OpcoesController : ControllerBase

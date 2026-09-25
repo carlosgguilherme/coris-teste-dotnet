@@ -1,19 +1,16 @@
+// DadosDashboard.cs
 using CorisSeguros.Api.Models;
 using CorisSeguros.Api.Services;
 using CorisSeguros.Api.Validacoes;
 
 namespace CorisSeguros.Api.Data;
 
-// Gera 24 meses de dados de mentira pra dashboard ter o que mostrar: canais, campanhas, apólices,
-// cotações (com o funil), sinistros e atendimentos. O Random tem semente fixa (2026),
-// então sempre sai o mesmo resultado
 public class DadosDashboard
 {
     private const int Meses = 24;
     private const int ApolicesPorMes = 125;
     private const double CrescimentoAnual = 0.12;
 
-    // peso de cada mês nas vendas (1 = mês normal); julho, dezembro e janeiro vendem mais
     private static readonly double[] Sazonalidade = { 1.3, 1.1, 0.8, 0.8, 0.85, 1.15, 1.45, 0.9, 0.85, 0.95, 1.0, 1.4 };
 
     private static readonly Dictionary<string, int> PesoDestinos = new Dictionary<string, int>
@@ -38,20 +35,17 @@ public class DadosDashboard
         ["site"] = 40, ["agencia"] = 30, ["corretor"] = 18, ["parceiro"] = 8, ["app"] = 4,
     };
 
-    // de cada 100 cotações, quantas viram apólice (no site, o celular converte menos)
     private static readonly Dictionary<string, double> Conversao = new Dictionary<string, double>
     {
         ["agencia"] = 0.35, ["corretor"] = 0.32, ["parceiro"] = 0.28, ["app"] = 0.22,
         ["site_desktop"] = 0.20, ["site_mobile"] = 0.13,
     };
 
-    // em qual etapa o cliente desiste
     private static readonly Dictionary<string, int> PesoAbandono = new Dictionary<string, int>
     {
         ["iniciada"] = 30, ["calculada"] = 35, ["dados_preenchidos"] = 20, ["pagamento"] = 15,
     };
 
-    // [frequência de sinistros, sinistralidade desejada] por destino
     private static readonly Dictionary<string, double[]> Risco = new Dictionary<string, double[]>
     {
         ["america_do_norte"] = new[] { 0.09, 0.85 }, ["europa"] = new[] { 0.06, 0.55 }, ["asia"] = new[] { 0.06, 0.60 },
@@ -64,13 +58,11 @@ public class DadosDashboard
         ["despesas_medicas"] = 55, ["bagagem"] = 15, ["cancelamento"] = 12, ["atraso_voo"] = 10, ["odontologica"] = 8,
     };
 
-    // despesa médica custa mais que atraso de voo
     private static readonly Dictionary<string, double> FatorCobertura = new Dictionary<string, double>
     {
         ["despesas_medicas"] = 1.3, ["bagagem"] = 0.5, ["cancelamento"] = 1.0, ["atraso_voo"] = 0.3, ["odontologica"] = 0.4,
     };
 
-    // [nome, mês/dia de início, mês/dia de fim, origem]
     private static readonly string[][] CampanhasDoAno =
     {
         new[] { "Carnaval", "01-20", "02-28", "instagram" },
@@ -99,7 +91,6 @@ public class DadosDashboard
 
     public void Popular()
     {
-        // se já tiver dados, não gera de novo
         if (_db.Cotacoes.Any())
         {
             return;
@@ -121,7 +112,6 @@ public class DadosDashboard
             Apolice apolice = NovaApolice(emissao, segurados, canais[canal], campanha);
             apolices.Add(apolice);
 
-            // uma cotação que virou esta apólice, e algumas que foram abandonadas
             cotacoes.Add(NovaCotacao(canais[canal], campanha, device, emissao, apolice));
             for (int i = 0; i < AbandonosPorVenda(canal, device); i++)
             {
@@ -129,7 +119,7 @@ public class DadosDashboard
             }
         }
 
-        _db.ChangeTracker.AutoDetectChangesEnabled = false; // sem isso a gravação de milhares de linhas fica bem lenta
+        _db.ChangeTracker.AutoDetectChangesEnabled = false;
         _db.Apolices.AddRange(apolices);
         _db.Cotacoes.AddRange(cotacoes);
         _db.Sinistros.AddRange(GerarSinistros(apolices));
@@ -151,7 +141,6 @@ public class DadosDashboard
         return canais;
     }
 
-    // campanhas dos últimos 24 meses que já começaram
     private List<Campanha> CriarCampanhas()
     {
         DateOnly limite = DateOnly.FromDateTime(_agora.AddMonths(-Meses));
@@ -211,7 +200,6 @@ public class DadosDashboard
         return segurados;
     }
 
-    // datas das vendas, mês a mês, com sazonalidade e crescimento
     private IEnumerable<DateTime> DatasDeEmissao()
     {
         for (int mesesAtras = Meses - 1; mesesAtras >= 0; mesesAtras--)
@@ -255,7 +243,6 @@ public class DadosDashboard
         };
     }
 
-    // cria a cotação e um evento para cada etapa do funil que o cliente passou
     private Cotacao NovaCotacao(Canal canal, Campanha? campanha, string device, DateTime dataDaVenda, Apolice? apolice)
     {
         string destino = apolice?.Destino ?? Sortear(PesoDestinos);
@@ -265,7 +252,6 @@ public class DadosDashboard
             ? dataDaVenda.AddMinutes(-_sorteio.Next(5, 91))
             : dataDaVenda.AddDays(-_sorteio.Next(21)).AddMinutes(-_sorteio.Next(601));
 
-        // cotação de campanha só existe enquanto a campanha está no ar
         if (campanha != null && DateOnly.FromDateTime(criadaEm) < campanha.Inicio)
         {
             criadaEm = campanha.Inicio.ToDateTime(new TimeOnly(9, 0));
@@ -345,7 +331,6 @@ public class DadosDashboard
         return sinistros;
     }
 
-    // sinistros recentes ainda estão em análise; os antigos foram pagos ou negados (10%)
     private void DefinirSituacao(Sinistro sinistro, int diasDesdeOAviso)
     {
         bool negado = _sorteio.Next(100) < 10;
@@ -401,7 +386,7 @@ public class DadosDashboard
                     Tipo = TiposDeAtendimento[_sorteio.Next(TiposDeAtendimento.Length)],
                     Inicio = inicio.AddSeconds(_sorteio.NextDouble() * (fim - inicio).TotalSeconds),
                     TempoEsperaSeg = espera,
-                    DentroSla = espera <= 180, // SLA: esperar até 3 minutos
+                    DentroSla = espera <= 180,
                     Nps = _sorteio.Next(100) < 70 ? NotaNps(espera) : null,
                 });
             }
@@ -410,7 +395,6 @@ public class DadosDashboard
         return atendimentos;
     }
 
-    // quem espera muito tende a dar nota menor
     private int NotaNps(int espera)
     {
         int sorteio = _sorteio.Next(1, 101) + (espera > 180 ? 12 : 0);
@@ -427,7 +411,6 @@ public class DadosDashboard
         return _sorteio.Next(0, 7);
     }
 
-    // investimento = parte do orçamento já gasta (proporcional ao tempo, se ainda está no ar)
     private void AtualizarInvestimento(List<Campanha> campanhas)
     {
         DateOnly hoje = DateOnly.FromDateTime(_agora);
@@ -438,7 +421,6 @@ public class DadosDashboard
         }
     }
 
-    // só site e app vendem por campanha, e só quando há uma campanha no ar
     private Campanha? CampanhaDaVenda(List<Campanha> campanhas, string canal, DateTime emissao)
     {
         if ((canal != "site" && canal != "app") || _sorteio.Next(100) >= 60)
@@ -474,7 +456,6 @@ public class DadosDashboard
         return SortearFaixa(new[] { new[] { 18, 30, 25 }, new[] { 31, 45, 35 }, new[] { 46, 59, 22 }, new[] { 60, 74, 14 }, new[] { 75, 84, 4 } });
     }
 
-    // sorteia uma faixa [de, até, peso] e depois um número dentro dela
     private int SortearFaixa(int[][] faixas)
     {
         int sorteio = _sorteio.Next(faixas.Sum(f => f[2]));
@@ -490,7 +471,6 @@ public class DadosDashboard
         return faixas[^1][0];
     }
 
-    // sorteia uma chave respeitando os pesos
     private string Sortear(Dictionary<string, int> pesos)
     {
         int sorteio = _sorteio.Next(pesos.Values.Sum());

@@ -1,3 +1,4 @@
+// Apolice.cs
 namespace CorisSeguros.Api.Models;
 
 public class Apolice
@@ -8,7 +9,6 @@ public class Apolice
     public int SeguradoId { get; set; }
     public Segurado Segurado { get; set; } = null!;
 
-    // por onde a venda veio (só a dashboard usa). Se cadastrar pela tela, fica sem canal
     public int? CanalId { get; set; }
     public Canal? Canal { get; set; }
 
@@ -20,7 +20,6 @@ public class Apolice
     public DateOnly InicioVigencia { get; set; }
     public DateOnly FimVigencia { get; set; }
 
-    // guardo em centavos pra não ter erro de arredondamento (R$ 323,70 vira 32370)
     public int ValorPremioCentavos { get; set; }
 
     public string Status { get; set; } = "ativa";
@@ -28,7 +27,6 @@ public class Apolice
     public DateTime CriadoEm { get; set; }
     public DateTime? AtualizadoEm { get; set; }
 
-    // exclusão lógica (o SoftDeletes do Laravel): se tiver data aqui, a apólice some do sistema mas continua no banco
     public DateTime? ExcluidoEm { get; set; }
 
     public int Dias()

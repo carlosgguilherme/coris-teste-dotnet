@@ -1,3 +1,4 @@
+// Respostas.cs
 namespace CorisSeguros.Api.Dtos;
 
 public class ListaPaginada

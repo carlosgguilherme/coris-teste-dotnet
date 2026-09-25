@@ -1,9 +1,9 @@
+// DadosIniciais.cs
 using CorisSeguros.Api.Dtos;
 using CorisSeguros.Api.Services;
 
 namespace CorisSeguros.Api.Data;
 
-// Umas apólices de exemplo pra tela não começar vazia (só se o banco estiver vazio)
 public static class DadosIniciais
 {
     public static async Task Popular(AppDbContext db, ApoliceService service)

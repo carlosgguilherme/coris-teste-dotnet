@@ -1,11 +1,10 @@
+// ApoliceRequest.cs
 using System.ComponentModel.DataAnnotations;
 using CorisSeguros.Api.Models;
 using CorisSeguros.Api.Validacoes;
 
 namespace CorisSeguros.Api.Dtos;
 
-// O que o frontend manda pra cadastrar, editar ou cotar. As validações ficam nos atributos
-// ([Required], [Cpf]...), parecido com as rules do Form Request no Laravel
 public class ApoliceRequest : IValidatableObject
 {
     public const int VigenciaMaximaDias = 365;
@@ -38,11 +37,8 @@ public class ApoliceRequest : IValidatableObject
     [Required(ErrorMessage = "Campo obrigatório.")]
     public DateOnly? FimVigencia { get; set; }
 
-    // só usado na edição (ativa ou cancelada)
     public string? Status { get; set; }
 
-    // validações que olham mais de um campo ao mesmo tempo (ex.: fim depois do início).
-    // Descobri que o ASP.NET só chama esse método se os atributos lá de cima passarem
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         DateOnly hoje = DateOnly.FromDateTime(DateTime.Today);

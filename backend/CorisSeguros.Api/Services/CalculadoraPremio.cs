@@ -1,8 +1,8 @@
+// CalculadoraPremio.cs
 using CorisSeguros.Api.Models;
 
 namespace CorisSeguros.Api.Services;
 
-// prêmio = diária do plano x dias x % do destino x % da idade
 public class CalculadoraPremio : ICalculadoraPremio
 {
     public int Calcular(string plano, string destino, DateOnly inicio, DateOnly fim, DateOnly dataNascimento)
@@ -35,7 +35,6 @@ public class CalculadoraPremio : ICalculadoraPremio
         return 100;
     }
 
-    // a idade que vale é a do dia que a viagem começa
     private static int CalcularIdade(DateOnly nascimento, DateOnly data)
     {
         int idade = data.Year - nascimento.Year;
@@ -47,7 +46,6 @@ public class CalculadoraPremio : ICalculadoraPremio
         return idade;
     }
 
-    // truque pra arredondar pro centavo mais próximo: soma 50 antes de dividir por 100
     private static int AplicarPercentual(int centavos, int percentual)
     {
         return (centavos * percentual + 50) / 100;

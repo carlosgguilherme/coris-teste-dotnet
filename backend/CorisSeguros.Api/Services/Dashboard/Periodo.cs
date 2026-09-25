@@ -1,6 +1,6 @@
+// Periodo.cs
 namespace CorisSeguros.Api.Services.Dashboard;
 
-// O período escolhido no filtro da dashboard (30 dias, 90 dias, 12 ou 24 meses)
 public class Periodo
 {
     public static readonly Dictionary<string, int> Opcoes = new Dictionary<string, int>
@@ -26,7 +26,6 @@ public class Periodo
         return new Periodo(agora.AddDays(-Opcoes[codigo]), agora);
     }
 
-    // o período anterior, do mesmo tamanho, pra comparar (ex.: estes 30 dias x os 30 de antes)
     public Periodo Anterior()
     {
         TimeSpan tamanho = Fim - Inicio;

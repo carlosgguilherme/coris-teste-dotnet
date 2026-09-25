@@ -1,3 +1,4 @@
+// AppDbContext.cs
 using CorisSeguros.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,17 +40,13 @@ public class AppDbContext : DbContext
             entidade.HasIndex(a => a.Numero).IsUnique();
             entidade.HasIndex(a => a.Status);
 
-            // relacionamento 1:N: um segurado pode ter várias apólices
             entidade.HasOne(a => a.Segurado)
                 .WithMany(s => s.Apolices)
                 .HasForeignKey(a => a.SeguradoId);
 
-            // filtro global: toda consulta já ignora as apólices excluídas, não preciso lembrar de filtrar
             entidade.HasQueryFilter(a => a.ExcluidoEm == null);
             entidade.HasIndex(a => a.CriadoEm);
         });
-
-        // ---------- tabelas da dashboard ----------
 
         modelBuilder.Entity<Canal>(entidade =>
         {
@@ -93,7 +90,6 @@ public class AppDbContext : DbContext
             entidade.Property(s => s.MotivoNegativa).HasMaxLength(120);
             entidade.HasIndex(s => s.Numero).IsUnique();
             entidade.HasIndex(s => new { s.Status, s.DataAviso });
-            // e os sinistros de apólice excluída também somem
             entidade.HasQueryFilter(s => s.Apolice.ExcluidoEm == null);
         });
 

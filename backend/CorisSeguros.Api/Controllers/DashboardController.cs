@@ -1,3 +1,4 @@
+// DashboardController.cs
 using CorisSeguros.Api.Services.Dashboard;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,7 +15,6 @@ public class DashboardController : ControllerBase
         _service = service;
     }
 
-    // GET api/dashboard/marketing?periodo=12m
     [HttpGet("{visao}")]
     public IActionResult Buscar(string visao, string periodo = "12m")
     {

@@ -1,6 +1,6 @@
+// Atendimento.cs
 namespace CorisSeguros.Api.Models;
 
-// Cada contato com a central 24h (telefone, whatsapp ou app)
 public class Atendimento
 {
     public int Id { get; set; }
@@ -11,5 +11,5 @@ public class Atendimento
     public DateTime Inicio { get; set; }
     public int TempoEsperaSeg { get; set; }
     public bool DentroSla { get; set; }
-    public int? Nps { get; set; } // nota de 0 a 10. O ? é porque nem todo cliente responde
+    public int? Nps { get; set; }
 }

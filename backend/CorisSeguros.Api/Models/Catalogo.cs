@@ -1,3 +1,4 @@
+// Catalogo.cs
 namespace CorisSeguros.Api.Models;
 
 public class Plano
@@ -21,7 +22,6 @@ public class StatusApolice
     public string Label { get; set; } = string.Empty;
 }
 
-// Planos, destinos e status que o sistema aceita. No Laravel isso era enum, aqui deixei numa classe só
 public static class Catalogo
 {
     public static readonly List<Plano> Planos = new List<Plano>
@@ -48,7 +48,6 @@ public static class Catalogo
         new StatusApolice { Valor = "cancelada", Label = "Cancelada" },
     };
 
-    // nomes bonitos pra mostrar na dashboard
     public static readonly Dictionary<string, string> EtapasDoFunil = new Dictionary<string, string>
     {
         ["iniciada"] = "Cotação iniciada",

@@ -1,6 +1,6 @@
+// Cotacao.cs
 namespace CorisSeguros.Api.Models;
 
-// Cada vez que um cliente simula o preço. Status: "convertida" (virou apólice) ou "abandonada"
 public class Cotacao
 {
     public int Id { get; set; }
@@ -18,7 +18,7 @@ public class Cotacao
     public string Plano { get; set; } = string.Empty;
     public int Dias { get; set; }
     public int ValorCalculadoCentavos { get; set; }
-    public string Device { get; set; } = string.Empty; // mobile ou desktop
+    public string Device { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string? EtapaAbandono { get; set; }
     public DateTime CriadoEm { get; set; }
